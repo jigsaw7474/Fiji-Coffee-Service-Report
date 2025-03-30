@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wine Catalog</title>
+    <title>Fiji Coffee - Machine Service Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="html2pdf.bundle.min.js"></script> <!-- Local reference to the downloaded file -->
     <style>
         body {
             font-family: 'Open Sans', sans-serif;
@@ -12,27 +14,45 @@
             border: 1px solid #d1d1d1;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             box-sizing: border-box;
-            width: 80%;
+            width: 210mm;
             background-color: #f8f8f8;
             color: #333;
-            text-align: left; /* Changed to left for consistency with index.html */
+            font-size: 0.9em;
+        }
+        .container {
+            max-width: 100%;
+            padding: 0;
+            background: none;
+            border-radius: 0;
         }
         .title-section {
-            text-align: center; /* Center the title section */
+            text-align: left;
             margin-bottom: 40px;
         }
-        h1 {
+        .main-title {
             font-size: 2.5em;
             color: #2c3e50;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
             font-weight: 700;
         }
-        img.logo {
-            max-width: 10%; /* Responsive logo */
-            height: auto; /* Maintain aspect ratio */
-            margin-bottom: 10px; /* Space below the logo */
+        .sub-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #777;
+            margin-top: 5px;
         }
-        input, select {
+        .form-group {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #555;
+            font-size: 1em;
+        }
+        select, input[type="text"], textarea {
             width: calc(100% - 20px);
             padding: 12px;
             border: 1px solid #ccc;
@@ -43,198 +63,225 @@
             color: #444;
             background-color: #fff;
         }
-        .filters {
+        .image-upload {
+            margin-bottom: 20px;
+        }
+        .image-upload input[type="file"] {
+            display: none;
+        }
+        .image-upload label {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .image-preview {
             display: flex;
-            justify-content: space-between;
             flex-wrap: wrap;
+            margin-top: 10px;
         }
-        .filters select {
-            width: 18%;
+        .image-preview img {
+            width: 250px; /* Increased width for larger images */
+            height: auto; /* Maintain aspect ratio */
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            object-fit: cover; /* Ensure images fit well within the box */
         }
-        .wine-card {
-            background: white;
-            padding: 15px;
-            margin: 10px 0;
+        .submit-report-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: none;
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            text-align: left;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 40px;
+            transition: background-color 0.3s ease;
         }
-        .wine-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        .submit-report-btn:hover {
+            background-color: #218838;
         }
-        .wine-card h3 {
-            margin: 5px 0;
-            color: #003366;
-        }
-        .wine-card p {
-            margin: 3px 0;
-            color: #333;
-        }
-        .wine-image {
-            width: 15%;
-            height: auto;
-            border-radius: 4px;
-            margin-bottom: 5px;
+        .page-break {
+            page-break-after: always; /* Force a page break */
         }
     </style>
-    <script>
-        const wines = [
-            { productCode: "BW001", name: "Borgogno Langhe Riesling", region: "Piedmont", country: "Italy", type: "White", vintage: "0000", price: "VEP$74.00", description: "offers vibrant aromas of citrus, green apple, and white flowers.", pairings: "Seafood, pasta", grapeVariety: "Riesling", image: "https://github.com/jigsaw7474/Final-/blob/main/Borgogno%20Langhe%20Riesling.png?raw=true" },
-            { productCode: "BW002", name: "Borgogno Barolo Classico DOCG", region: "Piedmont", country: "Italy", type: "Red", vintage: "2018/2019", price: "VEP$144.00", description: "complex aromas of red cherries, roses, and tar, complemented by hints of truffle and earth.", pairings: "Braised meat, aged cheese", grapeVariety: "Nebbiolo", image: "https://github.com/jigsaw7474/Final-/blob/main/Borgogno%20Barolo%20Classico%20DOCG.png?raw=true" },
-            { productCode: "BW003", name: "Borgogno Barolo Riserva DOCG", region: "Piedmont", country: "Italy", type: "Red", vintage: "2015", price: "VEP$369.00", description: "complex aromas of dried cherries, roses, leather, and truffle, with hints of tobacco and spice.", pairings: "Braised meat, aged cheese", grapeVariety: "Nebbiolo", image: "https://github.com/jigsaw7474/Final-/blob/main/Borgogno%20Barolo%20Riserva%20DOCG.png?raw=true" },
-            { productCode: "BW004", name: "Borgogno Langhe DOC Nebbiolo", region: "Piedmont", country: "Italy", type: "Red", vintage: "2020/2021", price: "VEP$74.00", description: "showcases aromas of red cherries, violets, and subtle spices.", pairings: "Roasted meat, pasta", grapeVariety: "Nebbiolo", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Borgogno%20Langhe%20DOC%20Nebbiolo.png?raw=true" },
-            { productCode: "BW005", name: "Borgogno Barbera d'Alba Superiore DOC", region: "Piedmont", country: "Italy", type: "White", vintage: "2020/2021", price: "VEP$67.00", description: "vibrant aromas of red berries, plums, and hints of spices.", pairings: "pizza, pasta", grapeVariety: "Barbera", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Borgogno%20Langhe%20DOC%20NebBorgogno%20Barbera%20d'Alba%20Superiore%20DOCbiolo.png?raw=true" },
-            { productCode: "BW006", name: "Villa Sparina Gavi del Comune di Gavi DOCG", region: "Piedmont", country: "Italy", type: "White", vintage: "2021", price: "VEP$43.00", description: "delicate aromas of green apple, pear, and citrus, with hints of almond and floral notes.", pairings: "Seafood, pasta", grapeVariety: "Cortese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Villa%20Sparina%20Gavi%20del%20Comune%20di%20Gavi%20DOCG.png?raw=true" },
-            { productCode: "BW007", name: "Villa Sparina Gavi del Comune di Gavi DOCG 1500ml", region: "Piedmont", country: "Italy", type: "White", vintage: "2020", price: "VEP$85.00", description: "delicate aromas of green apple, pear, and citrus, with hints of almond and floral notes.", pairings: "Seafood, pasta", grapeVariety: "Cortese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Villa%20Sparina%20Gavi%20del%20Comune%20di%20Gavi%20DOCG.png?raw=true" },
-            { productCode: "BW008", name: "Scarpa Moscato d'Asti DOCG", region: "Piedmont", country: "Italy", type: "Moscato", vintage: "2022", price: "VEP$44.00", description: "offers sweet and aromatic notes of ripe peach, apricot, and orange blossom, with hints of honey and white flowers.", pairings: "fruit desserts, pastries", grapeVariety: "Moscato", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Scarpa%20Moscato%20d'Asti%20DOCG.png?raw=true" },
-            { productCode: "BW009", name: "Scarpa Vermouth d Torino Rosso DOCG", region: "Piedmont", country: "Italy", type: "Red", vintage: "NV", price: "VEP$80.00", description: "complex aromas of dried fruits, herbs, and spices, with notes of caramel and citrus peel.", pairings: "appetizers, cheeses", grapeVariety: "Native Blend",image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Scarpa%20Moscato%20dScarpa%20Vermouth%20d%20Torino%20Rosso%20DOCG'Asti%20DOCG.png?raw=true" },
-            { productCode: "RW001", name: "Ridolfi Brunello di Montalcino DOCG", region: "Tuscany", country: "Italy", type: "Red", vintage: "2017", price: "VEP$118.00", description: "It has a full body, firm tannins, and a long, elegant finish.", pairings: "Braised meats, aged cheese", grapeVariety: "Sangiovese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Ridolfi%20Brunello%20di%20Montalcino%20DOCG.png?raw=true" },
-            { productCode: "RW002", name: "Ridolfi Fiero Rosso Toscana Super Tuscan IGT", region: "Tuscany", country: "Italy", type: "Red", vintage: "2019", price: "VEP$67.00", description: "aromas of blackberries, cherries, and plums, with hints of spices, tobacco, and oak. It has a full body, velvety tannins, and a long, complex finish.", pairings: "Rich sauce, mature cheese", grapeVariety: "Sangiovese, Merlot, Cabernet Sauvignon", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Ridolfi%20Fiero%20Rosso%20Toscana%20Super%20Tuscan%20IGT.png?raw=true" },
-            { productCode: "RW003", name: "Ricasoli Chianti Classico Brolio DOCG", region: "Tuscany", country: "Italy", type: "Red", vintage: "2020/2021", price: "VEP$47.00", description: "aromas of ripe cherries, plums, and hints of violet.", pairings: "Roasted meats, aged cheeses", grapeVariety: "Sangiovese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Ricasoli%20Chianti%20Classico%20Brolio%20DOCG.png?raw=true" },
-            { productCode: "RW004", name: "Ricasoli Chianti Classico Riserva Brolio DOCG", region: "Tuscany", country: "Italy", type: "Red", vintage: "2019", price: "VEP$68.00", description: "aromas of ripe cherries, red berries, and hints of spices and leather.", pairings: "Grilled meats, aged cheeses", grapeVariety: "Sangiovese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Ricasoli%20Chianti%20Classico%20Riserva%20Brolio%20DOCG.png?raw=true" },
-            { productCode: "RW005", name: "Belvento Vermentino Toscana IGT", region: "Tuscany", country: "Italy", type: "White", vintage: "2022", price: "VEP$36.00", description: "aromatic white wine with notes of citrus, pear, and white flowers. It has a lively acidity, a light to medium body, and a refreshing finish.", pairings: "Grilled vegetables, pasta", grapeVariety: "Vermentino", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Belvento%20Vermentino%20Toscana%20IGT.png?raw=true" },
-            { productCode: "RW006", name: "Belvento Sireno Toscana IGT", region: "Tuscany", country: "Italy", type: "Red", vintage: "2019", price: "VEP$36.00", description: "deep and lively ruby red, which almost anticipates its intense nose of flowers and ripe red fruit, drifting into spice nuances.", pairings: "Meat dishes, vegetables", grapeVariety: "Sangiovese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Belvento%20Sireno%20Toscana%20IGT.png?raw=true" },
-            { productCode: "RW007", name: "Sella & Mosca Vermentino de Sardegna La Cala DOC", region: "Sardinia", country: "Italy", type: "White", vintage: "2020", price: "VEP$36.00", description: "displays inviting aromas of citrus fruits, green apple, and Mediterranean herbs. With its crisp acidity, medium body, and refreshing finish reminiscent of a sea breeze.", pairings: "Seafood, salads", grapeVariety: "Vermentino", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Sella%20&%20Mosca%20Vermentino%20de%20Sardegna%20La%20Cala%20DOC.png?raw=true" },
-            { productCode: "RW008", name: "Sella & Mosca Monteoro Vermentino di Gallura Superiore DOC", region: "Sardinia", country: "Italy", type: "White", vintage: "NV", price: "VEP$42.00", description: "aromas of ripe citrus, tropical fruits, and subtle floral notes.", pairings: "Seafood, pasta", grapeVariety: "Vermentino", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Sella%20&%20Mosca%20Monteoro%20Vermentino%20di%20Gallura%20Superiore%20DOC.png?raw=true" },
-            { productCode: "RW009", name: "Sella & Mosca Terre Bianche Alghero Torbato DOC", region: "Sardinia", country: "Italy", type: "White", vintage: "NV", price: "VEP$42.00", description: "aromas of white flowers, citrus, and a hint of minerality.", pairings: "Grilled vegetables, fresh cheese", grapeVariety: "Torbato", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Sella%20&%20Mosca%20Terre%20Bianche%20Alghero%20Torbato%20DOC.png?raw=true" },
-            { productCode: "AW001", name: "Sella & Mosca Anemone Alghero Rosato DOC", region: "Sardinia", country: "Italy", type: "Rosato", vintage: "NV", price: "VEP$42.00", description: "soft, delicate pink, with various tones. It is plush, fresh, varied, and captivating on the nose, where the aromas blend to form an exuberant bouquet. The main floral note is violet, the fruity one cherry.", pairings: "white meats, vegetables", grapeVariety: "Native Blend", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Sella%20&%20Mosca%20Anemone%20Alghero%20Rosato%20DOC.png?raw=true" },
-            { productCode: "AW002", name: "Sella & Mosca Cannonau di Sardegna Riserva DOCG", region: "Sardinia", country: "Italy", type: "Red", vintage: "2019/2022", price: "VEP$39.00", description: "aromas of ripe red berries, spices, and hints of Mediterranean herbs.", pairings: "Grilled meats, aged cheese", grapeVariety: "Cannonau", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Sella%20&%20Mosca%20Cannonau%20di%20Sardegna%20Riserva%20DOCG.png?raw=true" },
-            { productCode: "AW003", name: "La Gioiosa Prosecco DOCG Treviso Brut NV", region: "Veneto", country: "Italy", type: "Prosecco", vintage: "NV", price: "VEP$33.00", description: "aromas of green apple, pear, and citrus, complemented by floral notes.", pairings: "Light appetizers, seafood", grapeVariety: "Glera", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/La%20Gioiosa%20Prosecco%20DOCG%20Treviso%20Brut%20NV.png?raw=true" },
-            { productCode: "AW004", name: "Nino Franco Nodi Valdobbiandene Prosecco Superiore", region: "Veneto", country: "Italy", type: "Prosecco", vintage: "2020", price: "VEP$66.00", description: "aromas of white peach, citrus, and acacia flowers, with a delicate mineral touch.", pairings: "Light dishes, seafood", grapeVariety: "Glera", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Nino%20Franco%20Nodi%20Valdobbiandene%20Prosecco%20Superiore.png?raw=true" },
-            { productCode: "AW005", name: "Nino Franco Rustico Valdobbiandene Prosecco Superiore", region: "Veneto", country: "Italy", type: "Prosecco", vintage: "NV", price: "VEP$49.00", description: "charming sparkling wine with aromas of apple, pear, and citrus, complemented by floral and yeasty notes.", pairings: "Aperitifs, seafood", grapeVariety: "Glera", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Nino%20Franco%20Rustico%20Valdobbiandene%20Prosecco%20Superiore.png?raw=true" },
-            { productCode: "AW006", name: "Nicolis Valpolicella DOC Classico", region: "Veneto", country: "Italy", type: "Red", vintage: "2021", price: "VEP$37.00", description: "aromas of red cherries, plums, and hints of spices.", pairings: "Pizza, grilled meats", grapeVariety: "Corvina, Rondinella, Molinara", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Nicolis%20Valpolicella%20DOC%20Classico.png?raw=true" },
-            { productCode: "AW007", name: "Nicolis Amarone Valpolicella Classico DOCG", region: "Veneto", country: "Italy", type: "Red", vintage: "2017/2019", price: "VEP$118.00", description: "a robust and complex red wine with aromas of dried fruits, chocolate, and spices.", pairings: "Aged cheese, rich meats", grapeVariety: "Corvina, Molinara, Rondinella, Croatina", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Nicolis%20Amarone%20Valpolicella%20Classico%20DOCG.png?raw=true" },
-            { productCode: "AW008", name: "St Pauls Kellerei Sauvignon Blanc Gfill Alto Adige DOC", region: "Alto Adige", country: "Italy", type: "White", vintage: "2021", price: "VEP$46.00", description: "an aromatic white wine with vibrant notes of citrus, green apple, and tropical fruits, complemented by hints of herbs and minerality.", pairings: "Seafood, goat cheese", grapeVariety: "Sauvignon Blanc", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/St%20Pauls%20Kellerei%20Sauvignon%20Blanc%20Gfill%20Alto%20Adige%20DOC.png?raw=true" },
-            { productCode: "AW009", name: "St Pauls Kellerei Chardonnay Alto Adige DOC", region: "Alto Adige", country: "Italy", type: "white", vintage: "2021", price: "VEP$40.00", description: "aromas of ripe apples, pears, and subtle notes of vanilla and toast.", pairings: "Creamy pasta, seafood", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/St%20Pauls%20Kellerei%20Chardonnay%20Alto%20Adige%20DOC.png?raw=true" },
-            { productCode: "CW001", name: "St Pauls Kellerei Pinot Nero Luzia Alto Adige DOC", region: "Alto Adige", country: "Italy", type: "Red", vintage: "2021/2022", price: "VEP$50.00", description: "aromas of red berries, cherries, and subtle earthy notes.", pairings: "Roasted poultry, salmon", grapeVariety: "Pinot Nero", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/St%20Pauls%20Kellerei%20Pinot%20Nero%20Luzia%20Alto%20Adige%20DOC.png?raw=true" },
-            { productCode: "CW002", name: "Cantina Lavis Pinot Grigio Trentino DOC", region: "Alto Adige", country: "Italy", type: "White", vintage: "2021/2022", price: "VEP$30.00", description: "aromas of green apple, pear, and citrus, enhanced by subtle floral notes.", pairings: "Seafood, pasta dishes", grapeVariety: "Pinot Grigio", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Cantina%20Lavis%20Pinot%20Grigio%20Trentino%20DOC.png?raw=true" },
-            { productCode: "CW003", name: "Cantina Lavis Chardonnay Treviso DOC", region: "Alto Adige", country: "Italy", type: "White", vintage: "2021", price: "VEP$30.00", description: "aromas of ripe apple, pear, and a hint of vanilla.", pairings: "Poultry, creamy sauce", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Cantina%20Lavis%20Chardonnay%20Treviso%20DOC.png?raw=true" },
-            { productCode: "CW004", name: "Cantina Lavis Sauvignon Blanc Trevenezie IGT", region: "Alto Adige", country: "Italy", type: "White", vintage: "2021", price: "VEP$30.00", description: "aromas of citrus, green apple, and tropical fruits, complemented by herbal and mineral notes.", pairings: "Salads, light dishes", grapeVariety: "Sauvignon", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Cantina%20Lavis%20Sauvignon%20Blanc%20Trevenezie%20IGT.png?raw=true" },
-            { productCode: "CW005", name: "Cusumano Angimbe Terre Sicilane Bianco IGT SV", region: "Sicily", country: "Italy", type: "White", vintage: "2021", price: "VEP$39.00", description: "aromatic white wine with notes of citrus, green apple, and tropical fruits, complemented by floral and mineral hints.", pairings: "Salads, seafoods", grapeVariety: "Insolia, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Cusumano%20Angimbe%20Terre%20Sicilane%20Bianco%20IGT%20SV.png?raw=true" },
-            { productCode: "CW006", name: "Cusumano Benuara Terre Siciliane Rosso IGT SV", region: "Sicily", country: "Italy", type: "Red", vintage: "2021", price: "VEP$46.00", description: "aromas of dark berries, plums, and spices, with a touch of earthy undertones.", pairings: "Grilled meats, pasta dishes", grapeVariety: "Nero d'Avola, Syrah", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Cusumano%20Benuara%20Terre%20Siciliane%20Rosso%20IGT%20SV.png?raw=true" },
-            { productCode: "CW007", name: "Alta Mora Etna Bianco DOC", region: "Sicily", country: "Italy", type: "White", vintage: "2021", price: "VEP$55.00", description: "aromas of citrus, green apple, and white flowers, with a mineral backbone typical of Etna wines.", pairings: "Seafood, light pasta dishes", grapeVariety: "Carricante", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Alta%20Mora%20Etna%20Bianco%20DOC.png?raw=true" },
-            { productCode: "CW008", name: "Alta Mora Etna Rosso DOC", region: "Sicily", country: "Italy", type: "Red", vintage: "2019/2020", price: "VEP$55.00", description: "aromas of red berries, cherries, and subtle earthy and smoky notes.", pairings: "Rich sauces, aged cheese", grapeVariety: "Nerello Mascalese", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/Alta%20Mora%20Etna%20Rosso%20DOC.png?raw=true" },
-            { productCode: "CW009", name: "BellaVista Franciacorta Alma Gran Cuvee Franciacorta Brut", region: "Lombardy", country: "Italy", type: "Prosecco", vintage: "NV", price: "VEP$85.00", description: "aromas of white flowers, citrus, and toasted brioche.", pairings: "Seafood, light appetizers", grapeVariety: "Pinot Nero, Chardonnay, Pinot Bianco", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/BellaVista%20Franciacorta%20Alma%20Gran%20Cuvee%20Franciacorta%20Brut.png?raw=true" },
-            { productCode: "DW001", name: "BellaVista Franciacorta Alma Gran Cuvee Franciacorta Brut 1500ml", region: "Lombardy", country: "Italy", type: "Prosecco", vintage: "NV", price: "VEP$183.00", description: "aromas of white flowers, citrus, and toasted brioche.", pairings: "Seafood, light appetizers", grapeVariety: "Pinot Nero, Chardonnay, Pinot Bianco", image: "https://github.com/jigsaw7474/Final-/blob/main/Italian%20Wine%20Images/BellaVista%20Franciacorta%20Alma%20Gran%20Cuvee%20Franciacorta%20Brut.png?raw=true" },
-            { productCode: "PF001", name: "Pouilly-Fuissé Chartron et Trébuchet", region: "Burgundy", country: "France", type: "White Wine", vintage: "2021", price: "VEP$90.00", description: "Elegant and complex with aromas of ripe stone fruits, citrus, and a hint of toasted almonds.", pairings: "Grilled seafood, roast chicken, creamy cheeses", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Pouilly-Fuiss%C3%A9%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "RC002", name: "Rully 1er Cru Meix Cadot Chartron et Trébuchet", region: "Burgundy", country: "France", type: "White Wine", vintage: "2020", price: "VEP$84.00", description: "Rich and well-balanced with notes of white flowers, citrus, and a touch of oak.", pairings: "Shellfish, poultry, creamy pasta", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Rully%201er%20Cru%20Meix%20Cadot%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "MC003", name: "Meursault Chartron et Trébuchet", region: "Burgundy", country: "France", type: "White Wine", vintage: "2020", price: "VEP$196.00", description: "Opulent and expressive with notes of ripe orchard fruits, hazelnut, and a hint of vanilla.", pairings: "Lobster, truffle dishes, creamy sauces", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Meursault%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "MC004", name: "Bourgogne Pinot Noir Chartron et Trébuchet", region: "Burgundy", country: "France", type: "Red Wine", vintage: "2021", price: "VEP$63.00", description: "Elegant with aromas of red berries, subtle spice, and a smooth finish.", pairings: "Roast chicken, grilled salmon, soft cheeses", grapeVariety: "Pinot Noir", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Bourgogne%20Pinot%20Noir%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "MC005", name: "Gevrey Chambertin 1er Cru Les Champeaux BIO Chartron et Trébuchet", region: "Burgundy", country: "France", type: "Red Wine", vintage: "2019", price: "VEP$238.00", description: "Complex and powerful with dark fruit flavors, earthy undertones, and a long, elegant finish.", pairings: "Beef Wellington, duck confit, aged cheeses", grapeVariety: "Pinot Noir", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gevrey%20Chambertin%201er%20Cru%20Les%20Champeaux%20BIO%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "MC006", name: "Vosne-Romanee Chartron et Trébuchet", region: "Burgundy", country: "France", type: "Red Wine", vintage: "2019", price: "VEP$79.00", description: "Rich and aromatic with red berry notes, hints of spice, and a silky texture.", pairings: "Grilled lamb, mushroom risotto, creamy pastas", grapeVariety: "Pinot Noir", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Vosne-Romanee%20Chartron%20et%20Tr%C3%A9buchet.png?raw=true" },
-            { productCode: "MC007", name: "Domaine Marguerite Carillon Santeny", region: "Burgundy", country: "France", type: "White Wine", vintage: "2019", price: "VEP$79.00", description: "Crisp and mineral-driven with flavors of green apple, citrus, and a touch of almond.", pairings: "Grilled fish, goat cheese, roasted chicken", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Domaine%20Marguerite%20Carillon%20Santeny.png?raw=true" },
-            { productCode: "MC008", name: "Domaine Michaut Chablis AC", region: "Chablis", country: "France", type: "White Wine", vintage: "2020/2021", price: "VEP$90.00", description: "Fresh and vibrant with bright acidity, green apple, lemon zest, and a hint of minerality.", pairings: "Oysters, seafood pasta, goat cheese", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Domaine%20Michaut%20Chablis%20AC.png?raw=true" },
-            { productCode: "MC009", name: "Domaine Michaut Chablis 1er Cru Vaucoupin", region: "Chablis", country: "France", type: "White Wine", vintage: "2021", price: "VEP$100.00", description: "Elegant and complex with notes of ripe citrus, white flowers, and a flinty finish.", pairings: "Grilled lobster, seared scallops, foie gras", grapeVariety: "Chardonnay",image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Domaine%20Michaut%20Chablis%201er%20Cru%20Vaucoupin.png?raw=true" },
-            { productCode: "MC010", name: "Moillard-Grivot Pommard 1er Cru Les Grands Epenots", region: "Burgundy", country: "France", type: "Red Wine", vintage: "2019", price: "VEP$206.00", description: "Full-bodied and rich with dark fruit flavors, earthy notes, and a well-structured tannin profile.", pairings: "Beef bourguignon, roasted duck, aged cheeses", grapeVariety: "Pinot Noir", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Moillard-Grivot%20Pommard%201er%20Cru%20Les%20Grands%20Epenots.png?raw=true" },
-            { productCode: "MC011", name: "Moillard-Grivot Nuits-Saint-Georges", region: "Burgundy", country: "France", type: "Red Wine", vintage: "2021", price: "VEP$90.00", description: "Well-balanced with aromas of ripe red fruits, spices, and a touch of oak, offering a smooth finish.", pairings: "Grilled pork, mushroom dishes, creamy sauces", grapeVariety: "Pinot Noir", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Moillard-Grivot%20Nuits-Saint-Georges.png?raw=true" },
-            { productCode: "MC012", name: "Maison Sauvion Sancerre", region: "Loire Valley", country: "France", type: "White Wine", vintage: "2021", price: "VEP$90.00", description: "Crisp and refreshing with vibrant acidity, green apple, citrus, and a hint of grassiness.", pairings: "Goat cheese, seafood, asparagus", grapeVariety: "Sauvignon Blanc", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Sauvion%20Sancerre.png?raw=true" },
-            { productCode: "MC013", name: "Maison Sauvion Pouilly Fumé", region: "Loire Valley", country: "France", type: "White Wine", vintage: "2021", price: "VEP$79.00", description: "Elegant with crisp acidity, green apple, citrus, and subtle smoky notes.", pairings: "Grilled fish, oysters, goat cheese", grapeVariety: "Sauvignon Blanc", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Sauvion%20Pouilly%20Fum%C3%A9.png?raw=true" },
-            { productCode: "MC014", name: "Château Branaire-Ducru Saint-Julien AOC", region: "Bordeux", country: "France", type: "Red Wine", vintage: "2018", price: "VEP$90.00", description: "A refined and elegant Bordeaux with deep black fruit flavors, hints of tobacco, and smooth tannins.", pairings: "Grilled steak, lamb chops, aged cheeses", grapeVariety: "Cabernet Sauvignon, Merlot, Petit Verdot", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Ch%C3%A2teau%20Branaire-Ducru%20Saint-Julien%20AOC.png?raw=true" },
-            { productCode: "MC015", name: "Maison Saint Aix 750ml", region: "Provence", country: "France", type: "Rosé Wine", vintage: "2022/2023", price: "VEP$47.00", description: "Fresh and vibrant with notes of strawberry, citrus, and a touch of floral elegance.", pairings: "Grilled seafood, Mediterranean salads, light pasta dishes", grapeVariety: "Grenache, Syrah, Cinsault", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Saint%20Aix%20750ml.png?raw=true" },
-            { productCode: "MC016", name: "Maison Saint Aix 1500ml", region: "Provence", country: "France", type: "Rosé Wine", vintage: "2022", price: "VEP$95.00", description: "Fresh and vibrant with notes of strawberry, citrus, and a touch of floral elegance.", pairings: "Grilled seafood, Mediterranean salads, light pasta dishes", grapeVariety: "Grenache, Syrah, Cinsault", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Saint%20Aix%201500ml.png?raw=true" },
-            { productCode: "MC017", name: "Maison Saint Aix 3000ml", region: "Provence", country: "France", type: "Rosé Wine", vintage: "2022", price: "VEP$259.00", description: "Fresh and vibrant with notes of strawberry, citrus, and a touch of floral elegance.", pairings: "Grilled seafood, Mediterranean salads, light pasta dishes", grapeVariety: "Grenache, Syrah, Cinsault", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Saint%20Aix%201500ml.png?raw=true" },
-            { productCode: "MC018", name: "Maison Saint Aix 6000ml", region: "Provence", country: "France", type: "Rosé Wine", vintage: "2022", price: "VEP$651.00", description: "Fresh and vibrant with notes of strawberry, citrus, and a touch of floral elegance.", pairings: "Grilled seafood, Mediterranean salads, light pasta dishes", grapeVariety: "Grenache, Syrah, Cinsault", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Maison%20Saint%20Aix%206000ml.png?raw=true" },
-            { productCode: "MC019", name: "Pierre Péters Brut Cuvée de Réserve", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$146.00", description: "A refined Champagne with notes of green apple, citrus, and a delicate toasty finish.", pairings: "Oysters, sushi, creamy cheeses", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Pierre%20P%C3%A9ters%20Brut%20Cuv%C3%A9e%20de%20R%C3%A9serve.png?raw=true" },
-            { productCode: "MC020", name: "Pierre Péters Les Chétillons", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$486.00", description: "A single-vineyard Champagne with rich flavors of brioche, citrus zest, and minerality.", pairings: "Lobster, foie gras, fresh seafood", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Pierre%20P%C3%A9ters%20Les%20Ch%C3%A9tillons.png?raw=true" },
-            { productCode: "MC021", name: "Pierre Péters Brut Millésime", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$249.00", description: "Elegant with layers of fresh fruit, toasted brioche, and a long, crisp finish.", pairings: "Crab, smoked salmon, aged cheeses", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Pierre%20P%C3%A9ters%20Brut%20Mill%C3%A9sime.png?raw=true" },
-            { productCode: "MC022", name: "Gremillet Selection Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$96.00", description: "A smooth and well-balanced Champagne with notes of fresh fruit, citrus, and a hint of almond.", pairings: "Grilled shrimp, gougères, soft cheeses", grapeVariety: "Pinot Noir, Chardonnay, Pinot Meunier", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20Selection%20Brut.png?raw=true" },
-            { productCode: "MC023", name: "Gremillet Rosé Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$102.00", description: "Delicate and fresh with notes of red berries, rose petals, and a crisp, elegant finish.", pairings: "Charcuterie, smoked salmon, fruit tarts", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20Ros%C3%A9%20Brut.png?raw=true" },
-            { productCode: "MC024", name: "Gremillet Le Millésime Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$132.00", description: "A refined and complex Champagne with rich flavors of honey, citrus, and a creamy texture.", pairings: "Seafood risotto, foie gras, soft cheeses", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20Le%20Mill%C3%A9sime%20Brut.png?raw=true" },
-            { productCode: "MC025", name: "Gremillet Rosé Vrai Extra Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$147.00", description: "A dry, elegant rosé with intense red fruit flavors, fine bubbles, and a crisp, mineral finish.", pairings: "Grilled tuna, roasted chicken, goat cheese", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20Ros%C3%A9%20Vrai%20Extra%20Brut.png?raw=true" },
-            { productCode: "MC026", name: "Gremillet Cuvée Evidence Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$171.00", description: "Sophisticated and harmonious with flavors of ripe fruit, honey, and toasted brioche, leading to a smooth finish.", pairings: "Lobster, duck pâté, rich desserts", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20Cuv%C3%A9e%20Evidence%20Brut.png?raw=true" },
-            { productCode: "MC027", name: "Gremillet S Mathusalem 6L", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$1,054.00", description: "An exceptional large format Champagne with refined notes of citrus, brioche, and a creamy, persistent mousse.", pairings: "Caviar, lobster tail, gourmet appetizers", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Gremillet%20S%20Mathusalem%206L.png?raw=true" },
-            { productCode: "MC028", name: "Lallier R.015 Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$104.00", description: "A balanced and fresh Champagne with vibrant acidity, citrus, and a subtle toasted finish.", pairings: "Grilled seafood, goat cheese, charcuterie", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Lallier%20R.015%20Brut.png?raw=true" },
-            { productCode: "MC029", name: "Lallier Blanc de Blancs Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$121.00", description: "Elegant and refreshing with notes of citrus, green apple, and a hint of brioche, leading to a crisp finish.", pairings: "Oysters, sushi, fresh crab", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Lallier%20Blanc%20de%20Blancs%20Brut.png?raw=true" },
-            { productCode: "MC030", name: "Georges Lacombe Grand Cuvée Brut", region: "Champagne", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$93.00", description: "A fresh and lively Champagne with notes of citrus, green apple, and a delicate touch of almond.", pairings: "Smoked salmon, seafood platters, soft cheeses", grapeVariety: "Pinot Noir, Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Georges%20Lacombe%20Grand%20Cuv%C3%A9e%20Brut.png?raw=true" },
-            { productCode: "MC031", name: "Château de la Galinière", region: "Provence", country: "France", type: "Rosé Wine", vintage: "2022", price: "VEP$45.00", description: "Crisp and refreshing with vibrant notes of strawberry, peach, and citrus, with a smooth finish.", pairings: "Grilled vegetables, seafood, light pasta dishes", grapeVariety: "Grenache, Syrah, Cinsault", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Ch%C3%A2teau%20de%20la%20Galini%C3%A8re.png?raw=true" },
-            { productCode: "MC032", name: "Moulins De Citran Haut-Médoc", region: "Haut-Médoc", country: "France", type: "Red Wine", vintage: "NV", price: "VEP$45.00", description: "A classic Bordeaux with notes of dark berries, subtle oak, and a firm tannin structure.", pairings: "Grilled meats, lamb, hard cheeses", grapeVariety: "Cabernet Sauvignon, Merlot", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Moulins%20De%20Citran%20Haut-M%C3%A9doc.png?raw=true" },
-            { productCode: "MC033", name: "Grandial Blanc de Blancs Brut", region: "France", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$24.00", description: "A light and crisp sparkling wine with fresh citrus notes, green apple, and a clean, refreshing finish.", pairings: "Aperitif, seafood, light salads", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Grandial%20Blanc%20de%20Blancs%20Brut.png?raw=true" },
-            { productCode: "MC034", name: "Charton Blanc de Blancs Brut", region: "France", country: "France", type: "Sparkling Wine", vintage: "NV", price: "VEP$24.00", description: "Crisp and elegant with bright citrus, green apple, and a delicate, smooth finish.", pairings: "Aperitif, oysters, goat cheese", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Charton%20Blanc%20de%20Blancs%20Brut.png?raw=true" },
-            { productCode: "MC035", name: "Baron D'Arignac White Blend", region: "Vin de France", country: "France", type: "White Wine", vintage: "NV", price: "VEP$18.00", description: "A smooth and refreshing white blend with tropical fruit flavors, citrus, and floral notes.", pairings: "Grilled chicken, seafood salads, light pasta dishes", grapeVariety: "Ugni Blanc, Colombard", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Baron%20D'Arignac%20White%20Blend.png?raw=true" },
-            { productCode: "MC036", name: "Baron D'Arignac Red Blend", region: "Vin de France", country: "France", type: "Red Wine", vintage: "NV", price: "VEP$18.00", description: "A smooth and fruity red blend with flavors of red berries, soft tannins, and a touch of spice.", pairings: "Grilled meats, pasta with tomato sauce, mild cheeses", grapeVariety: "Merlot, Cabernet Sauvignon", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/Baron%20D'Arignac%20Red%20Blend.png?raw=true" },
-            { productCode: "MC037", name: "JP Chenet Chardonnay", region: "Vin de France", country: "France", type: "White Wine", vintage: "-", price: "VEP$22.00", description: "A fresh and fruity Chardonnay with notes of ripe peach, citrus, and a smooth, balanced finish.", pairings: "Grilled chicken, seafood pasta, soft cheeses", grapeVariety: "Chardonnay", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Chardonnay.png?raw=true" },
-            { productCode: "MC038", name: "JP Chenet Sauvignon Blanc", region: "Vin de France", country: "France", type: "White Wine", vintage: "-", price: "VEP$22.00", description: "Crisp and vibrant with fresh citrus, green apple, and herbaceous notes.", pairings: "Goat cheese, seafood, fresh salads", grapeVariety: "Sauvignon Blanc", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Sauvignon%20Blanc.png?raw=true" },
-            { productCode: "MC039", name: "JP Chenet Merlot", region: "Vin de France", country: "France", type: "Red Wine", vintage: "2021", price: "VEP$22.00", description: "A smooth and fruity Merlot with ripe red berry flavors, soft tannins, and a round finish.", pairings: "Grilled meats, pasta with red sauce, mild cheeses", grapeVariety: "Merlot", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Merlot.png?raw=true" },
-            { productCode: "MC040", name: "JP Chenet Shiraz", region: "Vin de France", country: "France", type: "Red Wine", vintage: "2021", price: "VEP$22.00", description: "A bold Shiraz with flavors of blackberries, plums, and subtle spice, with a smooth finish.", pairings: "Grilled steak, barbecued meats, hard cheeses", grapeVariety: "Shiraz", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Shiraz.png?raw=true" },
-            { productCode: "MC041", name: "JP Chenet Cabernet/Shiraz", region: "Vin de France", country: "France", type: "Red Wine", vintage: "-", price: "VEP$22.00", description: "A rich and flavorful blend with dark fruit, peppery spice, and smooth tannins.", pairings: "Grilled lamb, spicy dishes, roasted vegetables", grapeVariety: "Cabernet Sauvignon, Shiraz", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Cabernet_Shiraz.png?raw=true" },
-            { productCode: "MC043", name: "JP Chenet Fashion Apple", region: "Vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A refreshing and fruity wine with crisp apple flavors and a light, sweet finish.", pairings: "Cheese platter, fresh fruit, light desserts", grapeVariety: "Apple, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Apple.png?raw=true" },
-            { productCode: "MC044", name: "JP Chenet Fashion Cassis", region: "Vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A vibrant and sweet fruit wine with rich blackcurrant flavors and a smooth, refreshing finish.", pairings: "Chocolate desserts, cheese platter, fresh berries", grapeVariety: "Cassis, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Cassis.png?raw=true" },
-            { productCode: "MC045", name: "JP Chenet Fashion Litchi", region: "Vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A delicate and fragrant fruit wine with exotic litchi flavors and a light, sweet finish.", pairings: "Tropical fruit salads, light desserts, soft cheeses", grapeVariety: "Litchi, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Litchi.png?raw=true" },
-            { productCode: "MC046", name: "JP Chenet Fashion Pineapple", region: "Vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A tropical and sweet fruit wine with fresh pineapple flavors and a crisp, refreshing finish.", pairings: "Grilled seafood, tropical fruit salads, light desserts", grapeVariety: "Pineapple, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Pineapple.png?raw=true" },
-            { productCode: "MC047", name: "JP Chenet Fashion Strawberry/Raspberry", region: "vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A fruity and vibrant wine with the sweet flavors of strawberry and raspberry, offering a refreshing and smooth finish.", pairings: "Chocolate desserts, fruit tarts, cheese platter", grapeVariety: "Strawberry, Raspberry, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Strawberry_Raspberry.png?raw=true" },
-            { productCode: "MC048", name: "JP Chenet Fashion Watermelon", region: "Vin de France", country: "France", type: "Fruit Wine", vintage: "NV", price: "VEP$22.00", description: "A refreshing fruit wine with crisp watermelon flavors and a light, sweet finish.", pairings: "Salads, fresh fruit, light seafood dishes", grapeVariety: "Watermelon, mixed fruits", image: "https://github.com/jigsaw7474/Final-/blob/main/French%20Wine%20Images/JP%20Ch%C3%A9net%20Fashion%20Watermelon.png?raw=true" },
-
-
-
-
-
-        ];
-        
-        function populateFilters() {
-            const categories = ["country", "region", "type"];
-            categories.forEach(category => {
-                let select = document.getElementById(category);
-                let uniqueValues = [...new Set(wines.map(wine => wine[category]))].sort();
-                select.innerHTML = `<option value="">All ${category}</option>` + uniqueValues.map(val => `<option value="${val}">${val}</option>`).join('');
-            });
-        }
-        
-        function searchWines() {
-            let input = document.getElementById("search").value.toLowerCase();
-            let filters = {
-                country: document.getElementById("country").value,
-                region: document.getElementById("region").value,
-                type: document.getElementById("type").value,
-                price: document.getElementById("price-input").value, // New input for price
-                grapeVariety: document.getElementById("grape-input").value // New input for grape variety
-            };
-            
-            let wineList = document.getElementById("wine-list");
-            wineList.innerHTML = "";
-            
-            wines.filter(wine => 
-                Object.values(wine).some(val => val.toString().toLowerCase().includes(input)) &&
-                Object.entries(filters).every(([key, value]) => !value || (key === 'price' ? wine.price.includes(value) : wine[key] === value))
-            ).forEach(wine => {
-                let card = document.createElement("div");
-                card.className = "wine-card";
-                card.innerHTML = `
-                    <img src="${wine.image}" alt="${wine.name}" class="wine-image">
-                    <h3>${wine.name} (${wine.vintage})</h3>
-                    <p><strong>Region:</strong> ${wine.region}, ${wine.country}</p>
-                    <p><strong>Type:</strong> ${wine.type}</p>
-                    <p><strong>Price:</strong> ${wine.price}</p>
-                    <p><strong>Description:</strong> ${wine.description}</p>
-                    <p><strong>Pairings:</strong> ${wine.pairings}</p>
-                    <p><strong>Grape Variety:</strong> ${wine.grapeVariety}</p>
-                `;
-                wineList.appendChild(card);
-            });
-        }
-        
-        window.onload = function() {
-            populateFilters();
-            searchWines();
-        };
-    </script>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="service-report-form">
         <div class="title-section">
-            <img src="https://github.com/jigsaw7474/Final-/blob/main/Lawhill%20Wines%20Logo.png?raw=true" alt="Logo" class="logo"> <!-- Replace with your logo URL -->
-            <h1>Wine Catalog</h1>
+            <h1 class="main-title">Fiji Coffee</h1>
+            <h2 class="sub-title">Machine Service Report</h2>
         </div>
-        <input type="text" id="search" onkeyup="searchWines()" placeholder="Search wines...">
-        <div class="filters">
-            <select id="country" onchange="searchWines()"></select>
-            <select id="region" onchange="searchWines()"></select>
-            <select id="type" onchange="searchWines()"></select>
-            <input type="text" id="price-input" onkeyup="searchWines()" placeholder="Enter price (e.g., VEP$74.00)">
-            <input type="text" id="grape-input" onkeyup="searchWines()" placeholder="Enter grape variety">
+
+        <div class="form-group">
+            <label for="service-type">Type</label>
+            <select id="service-type">
+                <option value="">Select Type</option>
+                <option value="Servicing">Servicing</option>
+                <option value="Breakdown">Breakdown</option>
+            </select>
         </div>
-        <div id="wine-list"></div>
+
+        <div class="form-group">
+            <label for="technician-name">Technician (Name)</label>
+            <select id="technician-name">
+                <option value="">Select Technician</option>
+                <option value="Sergio Ruiz">Sergio Ruiz</option>
+                <option value="Neco">Neco</option>
+                <option value="Avinesh">Avinesh</option>
+                <option value="Hari">Hari</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="machine-type">Machine Type</label>
+            <select id="machine-type">
+                <option value="">Select Machine Type</option>
+                <option value="Frankee A300">Frankee A300</option>
+                <option value="Frankee A400">Frankee A400</option>
+                <option value="S700 Coffee Machine">S700 Coffee Machine</option>
+                <option value="Dalla Corte 'Studio'">Dalla Corte 'Studio'</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fault-type">Fault</label>
+            <select id="fault-type">
+                <option value="">Select Fault Type</option>
+                <option value="User  ">User  </option>
+                <option value="Machine">Machine</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="customer-name">Customer Name</label>
+            <input type="text" id="customer-name" placeholder="Enter customer name">
+        </div>
+
+        <div class="form-group">
+            <label for="fault-details">Fault Details</label>
+            <textarea id="fault-details" rows="4" placeholder="Enter fault details..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="fix-details">Fix Details</label>
+            <textarea id="fix-details" rows="4" placeholder="Enter fix details..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="final-comments">Final Comments</label>
+            <textarea id="final-comments" rows="4" placeholder="Enter final comments..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="service-date">Date and Time of Service</label>
+            <input type="datetime-local" id="service-date" required>
+        </div>
+
+        <div class="form-group">
+            <label for="service-duration">Service Duration (in hours)</label>
+            <input type="text" id="service-duration" placeholder="Enter duration (e.g., 2 hours)">
+        </div>
+
+        <div class="page-break"></div> <!-- Page break for PDF -->
+
+        <div class="form-group image-upload">
+            <label for="image-upload">Upload Images (Max 10)</label>
+            <input type="file" id="image-upload" accept="image/*" multiple onchange="previewImages()" max="10">
+            <div class="image-preview" id="image-preview"></div>
+        </div>
+
+        <button type="button" class="submit-report-btn" onclick="generateServiceReportPDF()">Submit Report</button>
     </div>
+
+    <script>
+        function previewImages() {
+            const preview = document.getElementById('image-preview');
+            const files = document.getElementById('image-upload').files;
+            preview.innerHTML = ''; // Clear previous images
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                }
+
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function generateServiceReportPDF() {
+            const element = document.getElementById("service-report-form");
+            const serviceType = document.getElementById("service-type").value;
+            const technicianName = document.getElementById("technician-name").value;
+            const machineType = document.getElementById("machine-type").value;
+            const faultType = document.getElementById("fault-type").value;
+            const customerName = document.getElementById("customer-name").value;
+            const faultDetails = document.getElementById("fault-details").value;
+            const fixDetails = document.getElementById("fix-details").value;
+            const finalComments = document.getElementById("final-comments").value;
+            const serviceDate = document.getElementById("service-date").value;
+            const serviceDuration = document.getElementById("service-duration").value;
+
+            // Hide empty fields
+            if (!serviceType) document.getElementById("service-type").style.display = "none";
+            if (!technicianName) document.getElementById("technician-name").style.display = "none";
+            if (!machineType) document.getElementById("machine-type").style.display = "none";
+            if (!faultType) document.getElementById("fault-type").style.display = "none";
+            if (!customerName) document.getElementById("customer-name").style.display = "none";
+            if (!faultDetails) document.getElementById("fault-details").style.display = "none";
+            if (!fixDetails) document.getElementById("fix-details").style.display = "none";
+            if (!finalComments) document.getElementById("final-comments").style.display = "none";
+            if (!serviceDate) document.getElementById("service-date").style.display = "none";
+            if (!serviceDuration) document.getElementById("service-duration").style.display = "none";
+
+            // Hide the submit button
+            document.querySelector(".submit-report-btn").style.display = "none";
+
+            // Generate PDF filename
+            const filename = `${serviceDate.split('T')[0]}_${technicianName.replace(/\s+/g, '_')}_Service_Report.pdf`;
+
+            // Generate PDF
+            const opt = {
+                margin:       5,
+                filename:     filename,
+                image:        { type: 'jpeg', quality: 1 }, // Set quality to 1 for original quality
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                alert("Your service report has been saved as a PDF file. Please email it to the relevant recipient.");
+            }).catch(err => {
+                console.error("Error generating PDF:", err);
+                alert("There was an error generating the PDF. Please try again.");
+            }).finally(() => {
+                // Restore visibility of hidden fields
+                document.getElementById("service-type").style.display = "block";
+                document.getElementById("technician-name").style.display = "block";
+                document.getElementById("machine-type").style.display = "block";
+                document.getElementById("fault-type").style.display = "block";
+                document.getElementById("customer-name").style.display = "block";
+                document.getElementById("fault-details").style.display = "block";
+                document.getElementById("fix-details").style.display = "block";
+                document.getElementById("final-comments").style.display = "block";
+                document.getElementById("service-date").style.display = "block";
+                document.getElementById("service-duration").style.display = "block";
+                document.querySelector(".submit-report-btn").style.display = "block";
+            });
+        }
+    </script>
 </body>
 </html>
