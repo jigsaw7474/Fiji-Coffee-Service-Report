@@ -187,7 +187,7 @@
             <label for="fault-type">Fault</label>
             <select id="fault-type">
                 <option value="">Select Fault Type</option>
-                <option value="User   ">User   </option>
+                <option value="User  ">User  </option>
                 <option value="Machine">Machine</option>
             </select>
         </div>
@@ -255,7 +255,6 @@
 
         function generateServiceReportPDF() {
             const element = document.getElementById("service-report-form");
-            const imagePreview = document.getElementById('image-preview').cloneNode(true); // Clone the image preview
             const serviceType = document.getElementById("service-type").value;
             const technicianName = document.getElementById("technician-name").value;
             const machineType = document.getElementById("machine-type").value;
@@ -285,10 +284,6 @@
             // Generate PDF filename
             const filename = `${serviceDate.split('T')[0]}_${technicianName.replace(/\s+/g, '_')}_Service_Report.pdf`;
 
-            // Create a new div for images
-            const imageContainer = document.createElement('div');
-            imageContainer.appendChild(imagePreview);
-
             // Generate PDF
             const opt = {
                 margin:       5,
@@ -298,10 +293,7 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Generate PDF with content and images on separate pages
             html2pdf().set(opt).from(element).save().then(() => {
-                return html2pdf().set(opt).from(imageContainer).save();
-            }).then(() => {
                 alert("Your service report has been saved as a PDF file. Please email it to the relevant recipient.");
             }).catch(err => {
                 console.error("Error generating PDF:", err);
